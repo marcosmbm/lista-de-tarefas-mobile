@@ -16,7 +16,6 @@ Aplicação mobile com o objetivo de gerenciar suas tarefas do dia dia.
 
 
 ## Tecnologias
-- ReactJs
+- ReactNative com expo
 - Typescript
-- Dexie para salvar dados localmente
-- React Icons para ícones
+- SQLite para salvar dados localmente
