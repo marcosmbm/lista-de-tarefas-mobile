@@ -2,51 +2,54 @@ import React from 'react';
 import { Task } from '../../../models/Task';
 
 import {MaterialIcons} from '@expo/vector-icons';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback} from 'react-native';
 
 import { formattedDate } from '../../../utils/formattedDate';
 
 export interface ListItemsProps{
     task: Task,
-    updateItem: (task: Task) => void
+    updateItem: (task: Task) => void,
+    deleteItem: (task: Task) => void
 }
 
-export default function ListItems({task, updateItem}: ListItemsProps) {
+export default function ListItems({task, updateItem, deleteItem}: ListItemsProps) {
 
     const stylesForItems = (props: any) => {
         return task.completed ? [props, styles.completed] : props 
     }
 
   return (
-   <View style={styles.container}>
-     <View style={styles.taskBox}>
-        <TouchableOpacity onPress={() => updateItem(task)}>
-            <MaterialIcons
-                name={task.completed ? 'check-circle' : 'check-circle-outline'}
-                size={25}
-            />
-        </TouchableOpacity>
+    <TouchableWithoutFeedback onLongPress={() => deleteItem(task)}>
+        <View style={styles.container}>
+            <View style={styles.taskBox}>
+                <TouchableOpacity onPress={() => updateItem(task)}>
+                    <MaterialIcons
+                        name={task.completed ? 'check-circle' : 'check-circle-outline'}
+                        size={25}
+                    />
+                </TouchableOpacity>
 
-        <Text style={stylesForItems(styles.description)}>{task.description}</Text>
-     </View>
-
-     <View style={styles.separator}/>
-
-     <View style={styles.dateContainer}>
-        <View style={styles.dateContent}>
-            <Text style={stylesForItems(styles.dateTitle)}>Criado</Text>
-            <Text style={stylesForItems(styles.date)}>{formattedDate(task.createdDate)}</Text>
-        </View>
-
-        {
-            task.completed &&
-            <View style={[styles.dateContent, {alignItems: 'flex-end'}]}>
-                <Text style={styles.dateTitle}>Finalizado</Text>
-                <Text style={styles.date}>{formattedDate(task.completedDate)}</Text>
+                <Text style={stylesForItems(styles.description)}>{task.description}</Text>
             </View>
-        }
-     </View>
-   </View>
+
+            <View style={styles.separator}/>
+
+            <View style={styles.dateContainer}>
+                <View style={styles.dateContent}>
+                    <Text style={stylesForItems(styles.dateTitle)}>Criado</Text>
+                    <Text style={stylesForItems(styles.date)}>{formattedDate(task.createdDate)}</Text>
+                </View>
+
+                {
+                    task.completed &&
+                    <View style={[styles.dateContent, {alignItems: 'flex-end'}]}>
+                        <Text style={styles.dateTitle}>Finalizado</Text>
+                        <Text style={styles.date}>{formattedDate(task.completedDate)}</Text>
+                    </View>
+                }
+            </View>
+        </View>
+   </TouchableWithoutFeedback>
   );
 }
 

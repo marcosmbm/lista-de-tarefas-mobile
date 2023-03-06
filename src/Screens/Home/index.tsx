@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import { Task } from '../../models/Task';
 
 import {MaterialIcons} from '@expo/vector-icons';
-import {View, FlatList, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import {View, FlatList, StyleSheet, TouchableOpacity, Modal, Alert} from 'react-native';
 
 import Header from '../../components/Header';
 import ListItems from './ListItems';
@@ -81,6 +81,7 @@ export default function Home() {
       getItems();
     });
   }
+  
 
   function updateItem(task: Task){
     const updatedCompleted = task.completed ? 0 : 1;
@@ -103,6 +104,34 @@ export default function Home() {
     })
   }
 
+  function deleteItem(id: number){
+    db.transaction((tx) => {
+      tx.executeSql(
+        `delete from tasks where id = ?`,
+        [id],
+        (_, result) => {
+          console.log('RESULT DELETE '+JSON.stringify(result));
+        },
+        (_,error) => {
+          console.log('ERROR DELETE '+JSON.stringify(error));
+          return false
+        }
+      ),
+      getItems()
+    })
+  }
+
+  function handleDeleteItem(task: Task){
+    Alert.alert('Excluir tarefa', 'Deseja excluir esta tarefa?', [
+      {
+        text: 'Cancelar',
+        onPress: () => console.log('Cancel Pressed'),
+        style: 'cancel',
+      },
+      {text: 'Deletar', onPress: () => deleteItem(task.id || 0)},
+    ]);
+  }
+
   return (
    <View style={styles.container}>
       <Header/>
@@ -111,7 +140,7 @@ export default function Home() {
         data={tasks}
         ItemSeparatorComponent={() => <View style={styles.separator}/>}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({item}) => <ListItems task={item} updateItem={updateItem}/>}
+        renderItem={({item}) => <ListItems task={item} updateItem={updateItem} deleteItem={handleDeleteItem}/>}
       />
 
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setModalVisible(true)} >
