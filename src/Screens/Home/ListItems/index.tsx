@@ -2,15 +2,16 @@ import React from 'react';
 import { Task } from '../../../models/Task';
 
 import {MaterialIcons} from '@expo/vector-icons';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 
 import { formattedDate } from '../../../utils/formattedDate';
 
 export interface ListItemsProps{
-    task: Task
+    task: Task,
+    updateItem: (task: Task) => void
 }
 
-export default function ListItems({task}: ListItemsProps) {
+export default function ListItems({task, updateItem}: ListItemsProps) {
 
     const stylesForItems = (props: any) => {
         return task.completed ? [props, styles.completed] : props 
@@ -19,10 +20,13 @@ export default function ListItems({task}: ListItemsProps) {
   return (
    <View style={styles.container}>
      <View style={styles.taskBox}>
-        <MaterialIcons
-            name={task.completed ? 'check-circle' : 'check-circle-outline'}
-            size={25}
-        />
+        <TouchableOpacity onPress={() => updateItem(task)}>
+            <MaterialIcons
+                name={task.completed ? 'check-circle' : 'check-circle-outline'}
+                size={25}
+            />
+        </TouchableOpacity>
+
         <Text style={stylesForItems(styles.description)}>{task.description}</Text>
      </View>
 
@@ -37,8 +41,8 @@ export default function ListItems({task}: ListItemsProps) {
         {
             task.completed &&
             <View style={[styles.dateContent, {alignItems: 'flex-end'}]}>
-                <Text style={stylesForItems(styles.dateTitle)}>Finalizado</Text>
-                <Text style={stylesForItems(styles.date)}>{formattedDate(task.completedDate)}</Text>
+                <Text style={styles.dateTitle}>Finalizado</Text>
+                <Text style={styles.date}>{formattedDate(task.completedDate)}</Text>
             </View>
         }
      </View>

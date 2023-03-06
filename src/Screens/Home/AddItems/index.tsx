@@ -1,14 +1,36 @@
-import React from 'react';
-import {View, Text, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard} from 'react-native' 
+import React,{useState} from 'react';
+import { Task } from '../../../models/Task';
+
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Keyboard} from 'react-native'; 
+
+import {dateToDatabaseString} from '../../../utils/formattedDate';
 
 export interface AddItemsProps{
-    cancelTask: () => void;
+    closeModal: () => void;
+    addTask: (task: Task) => void;
 }
 
-export default function AddItems({cancelTask}: AddItemsProps) {
+export default function AddItems({closeModal, addTask}: AddItemsProps) {
+
+    const [input,setInput] = useState('');
+
+    function handleAddTask(){
+        if(input.trim() === ''){
+            return
+        }
+
+
+        const task = new Task(0, false, input.trim(), new Date());
+
+        addTask(task);
+
+        setInput('');
+        Keyboard.dismiss();
+        closeModal();
+    }
 
     function handleCancel(){
-        cancelTask();
+        closeModal();
     }
 
   return (
@@ -20,9 +42,11 @@ export default function AddItems({cancelTask}: AddItemsProps) {
                 <TextInput
                     placeholder='Digite sua tarefa'
                     style={styles.input}
+                    value={input}
+                    onChangeText={(value) => setInput(value)}
                 />
 
-                <TouchableOpacity style={[styles.buttonContainer, styles.buttonAdd]} activeOpacity={0.8}>
+                <TouchableOpacity style={[styles.buttonContainer, styles.buttonAdd]} activeOpacity={0.8} onPress={handleAddTask}>
                     <Text style={[styles.buttonText, {color: '#fff'}]}>Cadastrar</Text>
                 </TouchableOpacity>
 

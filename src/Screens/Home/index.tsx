@@ -1,22 +1,107 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { Task } from '../../models/Task';
 
 import {MaterialIcons} from '@expo/vector-icons';
-import {View, FlatList, StyleSheet, TouchableOpacity, Modal, Text} from 'react-native';
+import {View, FlatList, StyleSheet, TouchableOpacity, Modal} from 'react-native';
 
 import Header from '../../components/Header';
 import ListItems from './ListItems';
 import AddItems from './AddItems';
 
-export default function Home() {
+import {dateToDatabaseString, stringToDate} from '../../utils/formattedDate';
 
-  const tasks: Task[] = [
-    {id: 1, completed: false, description: 'Tarefa 1', createdDate: new Date()},
-    {id: 2, completed: true, description: 'Tarefa 2', createdDate: new Date(), completedDate: new Date()},
-    {id: 3, completed: false, description: 'Tarefa 3', createdDate: new Date()},
-    {id: 4, completed: true, description: 'Tarefa 4', createdDate: new Date(), completedDate: new Date()},
-  ];
+import { openDataBase } from '../../services/db';
+
+const db = openDataBase();
+
+function useForceUpdate() {
+  const [value, setValue] = useState(0);
+  return [() => setValue(value + 1), value];
+}
+
+
+export default function Home() {
+  const forceUpdate = useForceUpdate();
+
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+
+  function getItems(){
+    db.transaction((tx) => {
+      tx.executeSql("select * from tasks where completed = 0 ", [], (_, { rows }) =>{
+        const notCompletedTasks =  rows._array.map((item) => new Task(item.id, item.completed === 1, item.description, stringToDate(item.created_date), item.completed_date ? stringToDate(item.completed_date) : undefined));
+
+        tx.executeSql("select * from tasks where completed = 1 order by completed_date desc ", [], (_, { rows }) =>{
+          const completedTasks =  rows._array.map((item) => new Task(item.id, item.completed === 1, item.description, stringToDate(item.created_date), item.completed_date ? stringToDate(item.completed_date) : undefined));
+
+          setTasks(() => [...notCompletedTasks, ...completedTasks])
+        });
+      });
+    })
+  }
+
+  useEffect(() => {
+    db.transaction((tx) => {
+      tx.executeSql(`
+        create table if not exists tasks (
+          id integer primary key not null, 
+          completed int not null, 
+          description text not null,
+          created_date text not null,
+          completed_date text
+        );
+      `, [],
+      (_, result) => {
+        console.log('RESULT ADD '+JSON.stringify(result));
+        getItems();
+      },
+      (_,error) => {
+        console.log('ERROR ADD '+JSON.stringify(error));
+        return false
+      });
+    });
+  }, []);
+
+  function addItem(task: Task){
+    db.transaction((tx) => {
+      tx.executeSql(`
+          insert into tasks (completed, description, created_date)
+          values(0, ?, ?)
+        `, [task.description, dateToDatabaseString(new Date())],
+        (_, result) => {
+          console.log('RESULT ADD '+JSON.stringify(result));
+        },
+        (_,error) => {
+          console.log('ERROR ADD '+JSON.stringify(error));
+          return false
+        },
+      ),
+      null,
+      forceUpdate;
+      getItems();
+    });
+  }
+
+  function updateItem(task: Task){
+    const updatedCompleted = task.completed ? 0 : 1;
+
+    db.transaction((tx) => {
+      tx.executeSql(`
+        update tasks set completed = ?, completed_date = ?
+        where id = ?
+       `, 
+        [updatedCompleted, dateToDatabaseString(new Date()), task.id || 0],
+        (_, result) => {
+          console.log('RESULT UPDATED '+JSON.stringify(result));
+        },
+        (_,error) => {
+          console.log('ERROR UPDATED '+JSON.stringify(error));
+          return false
+        }
+      ),
+      getItems()
+    })
+  }
 
   return (
    <View style={styles.container}>
@@ -26,7 +111,7 @@ export default function Home() {
         data={tasks}
         ItemSeparatorComponent={() => <View style={styles.separator}/>}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({item}) => <ListItems task={item}/>}
+        renderItem={({item}) => <ListItems task={item} updateItem={updateItem}/>}
       />
 
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setModalVisible(true)} >
@@ -39,7 +124,8 @@ export default function Home() {
 
       <Modal visible={modalVisible} animationType={"slide"} transparent statusBarTranslucent={true}>
         <AddItems
-          cancelTask={() => setModalVisible(false)}
+          closeModal={() => setModalVisible(false)}
+          addTask={addItem}
         />
       </Modal>
    </View>
